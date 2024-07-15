@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract AMM {
+    IERC20 public token1;
+    IERC20 public token2;
+    uint256 public reserve1;
+    uint256 public reserve2;
+
+    constructor(address _token1, address _token2) {
+        token1 = IERC20(_token1);
+        token2 = IERC20(_token2);
+    }
+
+    function addLiquidity(uint256 _amount1, uint256 _amount2) public {
+        reserve1 += _amount1;
+        reserve2 += _amount2;
+        require(token1.transferFrom(msg.sender, address(this), _amount1), "Transfer failed");
+        require(token2.transferFrom(msg.sender, address(this), _amount2), "Transfer failed");
+    }
+
+    function removeLiquidity(uint256 _amount1, uint256 _amount2) public {
+        require(reserve1 >= _amount1 && reserve2 >= _amount2, "Insufficient reserves");
+        reserve1 -= _amount1;
+        reserve2 -= _amount2;
+        require(token1.transfer(msg.sender, _amount1), "Transfer failed");
+        require(token2.transfer(msg.sender, _amount2), "Transfer failed");
+    }
+
+    function swap(uint256 _amount1, uint256 _amount2) public {
+        uint256 amountOut = _amount1 * reserve2 / reserve1;
+        require(amountOut >= _amount2, "Insufficient output amount");
+        reserve1 += _amount1;
+        reserve2 -= amountOut;
+        require(token1.transferFrom(msg.sender, address(this), _amount1), "Transfer failed");
+        require(token2.transfer(msg.sender, amountOut), "Transfer failed");
+    }
+}
